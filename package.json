@@ -1,0 +1,28 @@
+{
+  "name": "profile-update-lambda",
+  "version": "1.0.0",
+  "description": "Accepts CSV file as input and adds a new beverage to the existing profile for the latest version of language/country.",
+  "main": "handler.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbarrington42/profile-update-lambda.git"
+  },
+  "keywords": [
+    "lambda",
+    "aws",
+    "mysql"
+  ],
+  "author": "Bill Barrington",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bbarrington42/profile-update-lambda/issues"
+  },
+  "homepage": "https://github.com/bbarrington42/profile-update-lambda#readme",
+  "dependencies": {
+    "mysql": "^2.16.0",
+    "underscore": "^1.9.1"
+  }
+}

@@ -27,9 +27,9 @@ const input = [
 ];
 
 
-const handler = (input) => db.run(input, function(err, result) {
-    if(err) console.error(err);
-    console.log(result);
+const handler = (input) => db.run(input, function (err, result) {
+    if (err) console.error(`error: ${JSON.stringify(err)}`);
+    else console.log(`success: ${JSON.stringify(result)}`);
 });
 
 

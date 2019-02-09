@@ -44,8 +44,9 @@ provider:
 #            - "/*"
 
 # you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+environment:
+  db_username: ${file(./.env.js):dbCreds.db_username}
+  db_password: ${file(./.env.js):dbCreds.db_password}
 
 # you can add packaging information here
 #package:
@@ -56,11 +57,16 @@ provider:
 #    - exclude-me.js
 #    - exclude-me-dir/**
 
+# todo Use variables to control bucket name and rules for different environments
 functions:
   addBeverage:
     handler: handler.addBeverage
     events:
-      - s3:
+      - existings3:
+          bucket: ccfs-misc-dev
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: beverage-profile-update/
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

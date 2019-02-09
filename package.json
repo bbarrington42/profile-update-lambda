@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Accepts CSV file as input and adds a new beverage to the existing profile for the latest version of language/country.",
   "main": "handler.js",
+  "directories": {
+    "lib": "lib"
+  },
   "scripts": {
     "test": "mocha"
   },
@@ -22,7 +25,11 @@
   },
   "homepage": "https://github.com/bbarrington42/profile-update-lambda#readme",
   "dependencies": {
+    "dotenv": "^6.2.0",
     "mysql": "^2.16.0",
     "underscore": "^1.9.1"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
   }
 }

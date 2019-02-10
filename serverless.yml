@@ -43,6 +43,17 @@ provider:
 #            - "Ref" : "ServerlessDeploymentBucket"
 #            - "/*"
 
+iamRoleStatements:
+  - Effect: "Allow"
+    Action:
+      - "s3:GetObject"
+    Resource:
+      Fn::Join:
+        - ""
+        - - "arn:aws:s3:::"
+          - "ccfs-misc-dev"
+          - "/beverage-profile-update/*"
+
 # you can define service wide environment variables here
 environment:
   db_username: ${file(./.env.js):dbCreds.db_username}
@@ -67,6 +78,7 @@ functions:
           event: s3:ObjectCreated:*
           rules:
             - prefix: beverage-profile-update/
+            - suffix: .csv
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

@@ -1,11 +1,13 @@
 'use strict';
 
 const db = require('./lib/db');
+var S3 = require('aws-sdk/clients/s3');
+const s3 = new S3({logger: console});
 
 // The trigger for this handler is an upload of the CSV file to S3.
-/*
-    This is what an event looks like:
-{
+
+//    This is what an event looks like:
+const event = {
     "Records": [
         {
             "eventVersion": "2.1",
@@ -42,31 +44,56 @@ const db = require('./lib/db');
             }
         }
     ]
-}
- */
+};
 
 
 // An array of test data
-const input = [
-    "country, language, brand_name, active, caffeine, exclusive, kitName, lowCal, material, sparkling, image_url, rank",
-    "'US', 'en', 'Woof', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blah-blah', 1",
-    //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://wimpy-wimpy', 1",
-    //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blart-blart', 1"
-];
+// const input = [
+//     "country, language, brand_name, active, caffeine, exclusive, kitName, lowCal, material, sparkling, image_url, rank",
+//     "'US', 'en', 'Woof', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blah-blah', 1",
+//     //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://wimpy-wimpy', 1",
+//     //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blart-blart', 1"
+// ];
 
+const run = (bucket, key) => {
+    s3.getObject({
+        Bucket: bucket,
+        Key: key
+    }, function (err, data) {
+        if (err) console.error(`getObject failed: ${err.toString()}`); else {
+            console.log(`data: ${JSON.stringify(data)}`);
 
-// todo Add content validation
-exports.addBeverage = async (event, context) => {
-    // Examine event and create input for DB update
-    console.log(`Event: ${JSON.stringify(event)}`);
-    console.log(`Context: ${JSON.stringify(context)}`);
-
-    // todo for now use dummy input just to see if we can connect
-    db.run(input, function (err, result) {
-        if (err) console.error(`error: ${JSON.stringify(err)}`);
-        else console.log(`success: ${JSON.stringify(result)}`);
+            db.run(data.Body.toString().split('\n'), function (err, result) {
+                if (err) console.error(`error: ${JSON.stringify(err)}`);
+                else console.log(`success: ${JSON.stringify(result)}`);
+            })
+        }
     })
 };
 
+// todo Add content validation
+exports.addBeverage = async (event, context) => {
+    try {
+        event.Records.forEach(value => {
+            const bucket = value.s3.bucket.name;
+            const key = value.s3.object.key;
+
+            console.log(`bucket: ${bucket}`);
+            console.log(`key: ${key}`);
+
+            console.log(`s3: ${JSON.stringify(s3)}`);
+
+            s3.listObjectsV2({Bucket: bucket}, function(err, data){
+                if(err) console.error(err); else console.log(data);
+            });
+
+            run(bucket, key);
+        });
+
+    } catch (err) {
+       throw new Error(err);
+    }
+};
+
 // todo For testing...
-//this.addBeverage({}, {});
+this.addBeverage(event, {});

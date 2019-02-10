@@ -1,7 +1,7 @@
 'use strict';
 
 const db = require('./lib/db');
-var S3 = require('aws-sdk/clients/s3');
+const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3({logger: console});
 
 // The trigger for this handler is an upload of the CSV file to S3.
@@ -56,6 +56,7 @@ const event = {
 // ];
 
 const run = (bucket, key) => {
+    console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     s3.getObject({
         Bucket: bucket,
         Key: key
@@ -63,7 +64,10 @@ const run = (bucket, key) => {
         if (err) console.error(`getObject failed: ${err.toString()}`); else {
             console.log(`data: ${JSON.stringify(data)}`);
 
-            db.run(data.Body.toString().split('\n'), function (err, result) {
+            const input = data.Body.toString().split('\n');
+            console.log(`input: ${JSON.stringify(input)}`);
+
+            db.run(input, function (err, result) {
                 if (err) console.error(`error: ${JSON.stringify(err)}`);
                 else console.log(`success: ${JSON.stringify(result)}`);
             })
@@ -72,7 +76,7 @@ const run = (bucket, key) => {
 };
 
 // todo Add content validation
-exports.addBeverage = async (event, context) => {
+exports.addBeverage = (event, context) => {
     try {
         event.Records.forEach(value => {
             const bucket = value.s3.bucket.name;
@@ -80,12 +84,6 @@ exports.addBeverage = async (event, context) => {
 
             console.log(`bucket: ${bucket}`);
             console.log(`key: ${key}`);
-
-            console.log(`s3: ${JSON.stringify(s3)}`);
-
-            s3.listObjectsV2({Bucket: bucket}, function(err, data){
-                if(err) console.error(err); else console.log(data);
-            });
 
             run(bucket, key);
         });
@@ -96,4 +94,4 @@ exports.addBeverage = async (event, context) => {
 };
 
 // todo For testing...
-this.addBeverage(event, {});
+//this.addBeverage(event, {});

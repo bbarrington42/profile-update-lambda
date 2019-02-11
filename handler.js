@@ -2,7 +2,7 @@
 
 const db = require('./lib/db');
 const S3 = require('aws-sdk/clients/s3');
-const s3 = new S3({logger: console});
+const s3 = new S3();
 
 // The trigger for this handler is an upload of the CSV file to S3.
 
@@ -76,7 +76,7 @@ const run = (bucket, key) => {
 };
 
 // todo Add content validation
-exports.addBeverage = (event, context) => {
+exports.addBeverage = (event, context, callback) => {
     try {
         event.Records.forEach(value => {
             const bucket = value.s3.bucket.name;
@@ -89,8 +89,10 @@ exports.addBeverage = (event, context) => {
         });
 
     } catch (err) {
-       throw new Error(err);
+        callback(err);
     }
+    console.log(`Exiting...`);
+    callback(null, 'Done');
 };
 
 // todo For testing...

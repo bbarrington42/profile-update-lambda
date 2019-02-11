@@ -84,6 +84,12 @@ functions:
           rules:
             - prefix: ${file(config.${self:provider.stage}.json):s3_prefix}
             - suffix: .csv
+    vpc:
+      securityGroupIds:
+        - sg-1c3cfe65
+      subnetIds:
+        - subnet-d67b9ffc
+        - subnet-76439300
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

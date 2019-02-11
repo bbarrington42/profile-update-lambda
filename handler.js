@@ -1,12 +1,13 @@
 'use strict';
 
+const _ = require('underscore');
 const db = require('./lib/db');
 const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
 // The trigger for this handler is an upload of the CSV file to S3.
 
-//    This is what an event looks like:
+// Example event structure:
 const event = {
     "Records": [
         {
@@ -47,14 +48,6 @@ const event = {
 };
 
 
-// An array of test data
-// const input = [
-//     "country, language, brand_name, active, caffeine, exclusive, kitName, lowCal, material, sparkling, image_url, rank",
-//     "'US', 'en', 'Woof', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blah-blah', 1",
-//     //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://wimpy-wimpy', 1",
-//     //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blart-blart', 1"
-// ];
-
 const run = (bucket, key, callback) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     s3.getObject({
@@ -68,7 +61,11 @@ const run = (bucket, key, callback) => {
         } else {
             console.log(`data: ${JSON.stringify(data)}`);
 
-            const input = data.Body.toString().split('\n');
+            const raw = data.Body.toString().split('\n');
+            // Filter out comment lines & empties
+            const input = _.filter(raw, line => {
+               return !line.startsWith('#') && !_.isEmpty(line);
+            });
             console.log(`input: ${JSON.stringify(input)}`);
 
             db.run(input, function (err, result) {
@@ -77,7 +74,7 @@ const run = (bucket, key, callback) => {
                     console.error(msg);
                     callback(msg);
                 } else {
-                    const msg = `db.run success: ${result.toString()}`;
+                    const msg = result.toString();
                     console.log(msg);
                     callback(null, msg);
                 }
@@ -88,7 +85,7 @@ const run = (bucket, key, callback) => {
 
 // todo Add content validation
 exports.addBeverage = (event, context, callback) => {
-    const data = event.Records.shift();
+    const data = event.Records.shift(); // Expecting only one record
     try {
         const bucket = data.s3.bucket.name;
         const key = data.s3.object.key;
@@ -103,5 +100,3 @@ exports.addBeverage = (event, context, callback) => {
     }
 };
 
-// todo For testing...
-//this.addBeverage(event, {});

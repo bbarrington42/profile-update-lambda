@@ -55,21 +55,32 @@ const event = {
 //     //"'GB', 'en', 'Coca-Cola', 1, 1, 1, 'Coke', 1, 1234567, 1, 'http://blart-blart', 1"
 // ];
 
-const run = (bucket, key) => {
+const run = (bucket, key, callback) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     s3.getObject({
         Bucket: bucket,
         Key: key
     }, function (err, data) {
-        if (err) console.error(`getObject failed: ${err.toString()}`); else {
+        if (err) {
+            const msg = `getObject failed: ${err.toString()}`;
+            console.error(msg);
+            callback(msg);
+        } else {
             console.log(`data: ${JSON.stringify(data)}`);
 
             const input = data.Body.toString().split('\n');
             console.log(`input: ${JSON.stringify(input)}`);
 
             db.run(input, function (err, result) {
-                if (err) console.error(`error: ${JSON.stringify(err)}`);
-                else console.log(`success: ${JSON.stringify(result)}`);
+                if (err) {
+                    const msg = `db.run failed: ${err.toString()}`;
+                    console.error(msg);
+                    callback(msg);
+                } else {
+                    const msg = `db.run success: ${result.toString()}`;
+                    console.log(msg);
+                    callback(null, msg);
+                }
             })
         }
     })
@@ -77,22 +88,19 @@ const run = (bucket, key) => {
 
 // todo Add content validation
 exports.addBeverage = (event, context, callback) => {
+    const data = event.Records.shift();
     try {
-        event.Records.forEach(value => {
-            const bucket = value.s3.bucket.name;
-            const key = value.s3.object.key;
+        const bucket = data.s3.bucket.name;
+        const key = data.s3.object.key;
 
-            console.log(`bucket: ${bucket}`);
-            console.log(`key: ${key}`);
+        console.log(`bucket: ${bucket}`);
+        console.log(`key: ${key}`);
 
-            run(bucket, key);
-        });
+        run(bucket, key, callback);
 
     } catch (err) {
         callback(err);
     }
-    console.log(`Exiting...`);
-    callback(null, 'Done');
 };
 
 // todo For testing...

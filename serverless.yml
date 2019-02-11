@@ -20,8 +20,14 @@ service: profile-update-lambda
 provider:
   name: aws
   runtime: nodejs8.10
-  stage: dev
   profile: cda
+  stage: ${opt:stage, 'dev'}
+  environment:
+    db_user: ${file(config.${self:provider.stage}.json):db_user}
+    db_password: ${file(config.${self:provider.stage}.json):db_password}
+    db_database: ${file(config.${self:provider.stage}.json):db_database}
+    db_host: ${file(config.${self:provider.stage}.json):db_host}
+    db_port: ${file(config.${self:provider.stage}.json):db_port}
 
 # you can overwrite defaults here
 #  stage: dev
@@ -43,6 +49,7 @@ provider:
 #            - "Ref" : "ServerlessDeploymentBucket"
 #            - "/*"
 
+# todo Use variables and find out why this doesn't actually update the lambda definition
 iamRoleStatements:
   - Effect: "Allow"
     Action:
@@ -55,9 +62,8 @@ iamRoleStatements:
           - "/beverage-profile-update/*"
 
 # you can define service wide environment variables here
-environment:
-  db_username: ${file(./.env.js):dbCreds.db_username}
-  db_password: ${file(./.env.js):dbCreds.db_password}
+#environment:
+  #key1: val1
 
 # you can add packaging information here
 #package:
@@ -68,16 +74,15 @@ environment:
 #    - exclude-me.js
 #    - exclude-me-dir/**
 
-# todo Use variables to control bucket name and rules for different environments
 functions:
   addBeverage:
     handler: handler.addBeverage
     events:
       - existings3:
-          bucket: ccfs-misc-dev
+          bucket: ${file(config.${self:provider.stage}.json):s3_bucket}
           event: s3:ObjectCreated:*
           rules:
-            - prefix: beverage-profile-update/
+            - prefix: ${file(config.${self:provider.stage}.json):s3_prefix}
             - suffix: .csv
 
 #    The following are a few example events you can configure

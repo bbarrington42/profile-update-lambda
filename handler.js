@@ -99,4 +99,3 @@ exports.addBeverage = (event, context, callback) => {
         callback(err);
     }
 };
-

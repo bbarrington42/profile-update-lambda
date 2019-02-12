@@ -2,6 +2,7 @@
 
 const _ = require('underscore');
 const db = require('./lib/db');
+const validator = require('./lib/valid');
 const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
@@ -64,21 +65,30 @@ const run = (bucket, key, callback) => {
             const raw = data.Body.toString().split('\n');
             // Filter out comment lines & empties
             const input = _.filter(raw, line => {
-               return !line.startsWith('#') && !_.isEmpty(line);
+                return !line.startsWith('#') && !_.isEmpty(line);
+            }).map(line => {
+                return line.trim();
             });
             console.log(`input: ${JSON.stringify(input)}`);
 
-            db.run(input, function (err, result) {
-                if (err) {
-                    const msg = `db.run failed: ${err.toString()}`;
-                    console.error(msg);
-                    callback(msg);
-                } else {
-                    const msg = result.toString();
-                    console.log(msg);
-                    callback(null, msg);
-                }
-            })
+            // Validate
+            const errors = validator.validateCSV(input);
+
+            if (!_.isEmpty(errors)) {
+                callback(errors);
+            } else {
+                db.run(input, function (err, result) {
+                    if (err) {
+                        const msg = `db.run failed: ${err.toString()}`;
+                        console.error(msg);
+                        callback(msg);
+                    } else {
+                        const msg = result.toString();
+                        console.log(msg);
+                        callback(null, msg);
+                    }
+                })
+            }
         }
     })
 };

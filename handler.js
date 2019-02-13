@@ -63,7 +63,7 @@ const run = (bucket, key, callback) => {
             console.log(`data: ${JSON.stringify(data)}`);
 
             const raw = data.Body.toString().split('\n');
-            // Filter out comment lines & empties
+            // Filter out comment lines & empties and trim each line
             const input = _.filter(raw, line => {
                 return !line.startsWith('#') && !_.isEmpty(line);
             }).map(line => {
@@ -93,7 +93,6 @@ const run = (bucket, key, callback) => {
     })
 };
 
-// todo Add content validation
 exports.addBeverage = (event, context, callback) => {
     const data = event.Records.shift(); // Expecting only one record
     try {

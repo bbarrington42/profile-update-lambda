@@ -48,6 +48,14 @@ const event = {
     ]
 };
 
+const dbConfig = {
+    host: process.env.db_host,
+    port: process.env.db_port,
+    database: process.env.db_database,
+    user: process.env.db_user,
+    password: process.env.db_password
+};
+
 const getObject = (s3, bucket, key) => {
     return new Promise((resolve, reject) => {
         s3.getObject({
@@ -67,7 +75,7 @@ const getObject = (s3, bucket, key) => {
 };
 
 
-const run = (bucket, key) => {
+const run = (bucket, key, config) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     return getObject(s3, bucket, key).then(data => {
 
@@ -86,7 +94,7 @@ const run = (bucket, key) => {
         if (!_.isEmpty(errors)) {
             return Promise.reject(errors);
         }
-        return db.run(input);
+        return db.run(input, config);
     });
 };
 
@@ -98,7 +106,7 @@ exports.addBeverage = async (event, context) => {
     console.log(`bucket: ${bucket}`);
     console.log(`key: ${key}`);
 
-    return run(bucket, key).then(result => {
+    return run(bucket, key, dbConfig).then(result => {
         console.log(`addBeverage result: ${result}`);
         return result;
     }).catch(err => {

@@ -80,21 +80,14 @@ const run = (bucket, key, config) => {
     return getObject(s3, bucket, key).then(data => {
 
         const raw = data.Body.toString().split('\n');
-        // Filter out comment lines & empties and trim each line
-        const input = _.filter(raw, line => {
-            return !line.startsWith('#') && !_.isEmpty(line);
-        }).map(line => {
-            return line.trim();
-        });
+        // Filter out comment lines & empties and then trim each remaining line
+        const input = _.filter(raw, line => !line.startsWith('#') && !_.isEmpty(line)).map(line => line.trim());
         console.log(`input: ${JSON.stringify(input)}`);
 
         // Validate
         const errors = validator.validateCSV(input);
 
-        if (!_.isEmpty(errors)) {
-            return Promise.reject(errors);
-        }
-        return db.run(input, config);
+        return _.isEmpty(errors) ? db.run(input, config) : Promise.reject(errors);
     });
 };
 

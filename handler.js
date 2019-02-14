@@ -48,63 +48,62 @@ const event = {
     ]
 };
 
+const dbConfig = {
+    host: process.env.db_host,
+    port: process.env.db_port,
+    database: process.env.db_database,
+    user: process.env.db_user,
+    password: process.env.db_password
+};
 
-const run = (bucket, key, callback) => {
-    console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
-    s3.getObject({
-        Bucket: bucket,
-        Key: key
-    }, function (err, data) {
-        if (err) {
-            const msg = `getObject failed: ${err.toString()}`;
-            console.error(msg);
-            callback(msg);
-        } else {
-            console.log(`data: ${JSON.stringify(data)}`);
-
-            const raw = data.Body.toString().split('\n');
-            // Filter out comment lines & empties and trim each line
-            const input = _.filter(raw, line => {
-                return !line.startsWith('#') && !_.isEmpty(line);
-            }).map(line => {
-                return line.trim();
-            });
-            console.log(`input: ${JSON.stringify(input)}`);
-
-            // Validate
-            const errors = validator.validateCSV(input);
-
-            if (!_.isEmpty(errors)) {
-                callback(errors);
+const getObject = (s3, bucket, key) => {
+    return new Promise((resolve, reject) => {
+        s3.getObject({
+            Bucket: bucket,
+            Key: key
+        }, (err, data) => {
+            if (err) {
+                const msg = `getObject failed: ${err.toString()}`;
+                console.error(msg);
+                reject(msg);
             } else {
-                db.run(input, function (err, result) {
-                    if (err) {
-                        const msg = `db.run failed: ${err.toString()}`;
-                        console.error(msg);
-                        callback(msg);
-                    } else {
-                        const msg = result.toString();
-                        console.log(msg);
-                        callback(null, msg);
-                    }
-                })
+                console.log(`data: ${JSON.stringify(data)}`);
+                resolve(data);
             }
-        }
+        })
     })
 };
 
-exports.addBeverage = (event, context, callback) => {
+
+const run = (bucket, key, config) => {
+    console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
+    return getObject(s3, bucket, key).then(data => {
+
+        const raw = data.Body.toString().split('\n');
+        // Filter out comment lines & empties and then trim each remaining line
+        const input = _.filter(raw, line => !line.startsWith('#') && !_.isEmpty(line)).map(line => line.trim());
+        console.log(`input: ${JSON.stringify(input)}`);
+
+        // Validate
+        const errors = validator.validateCSV(input);
+
+        return _.isEmpty(errors) ? db.run(input, config) : Promise.reject(errors);
+    });
+};
+
+exports.addBeverage = async (event, context) => {
     const data = event.Records.shift(); // Expecting only one record
-    try {
-        const bucket = data.s3.bucket.name;
-        const key = data.s3.object.key;
+    const bucket = data.s3.bucket.name;
+    const key = data.s3.object.key;
 
-        console.log(`bucket: ${bucket}`);
-        console.log(`key: ${key}`);
+    console.log(`bucket: ${bucket}`);
+    console.log(`key: ${key}`);
 
-        run(bucket, key, callback);
-
-    } catch (err) {
-        callback(err);
-    }
+    return run(bucket, key, dbConfig).then(result => {
+        console.log(`addBeverage result: ${result}`);
+        return result;
+    }).catch(err => {
+        console.error(err);
+        return err;
+    });
 };

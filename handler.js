@@ -50,7 +50,7 @@ const event = {
 };
 
 // Get the configuration for this deployment
-const config = (bucket, key) => util.getObjectAsString(s3, bucket, key).then(JSON.parse);
+const getConfig = (bucket, key) => util.getObjectAsString(s3, bucket, key).then(JSON.parse);
 
 
 const run = (bucket, key, config) => {
@@ -82,19 +82,9 @@ exports.addBeverage = async (event, context) => {
     console.log(`configBucket ${configBucket}, configKey ${configKey}`);
 
     // todo Figure out why we do not have permissions to retrieve configuration from S3!
-    const config = {
-        "db": {
-            "host": "cda-dev-db.cupaheoxeybe.us-east-1.rds.amazonaws.com",
-            "port": 3306,
-            "database": "cda",
-            "user": "cda_user",
-            "password": "password"
-        }
-    };
-        //await config(configBucket, configKey);
-    //////////////////////////////////////////////////
+    const config = await getConfig(configBucket, configKey);
 
-    console.log(`dbConfig: ${JSON.stringify(config.db)}`);
+    console.log(`config.db: ${JSON.stringify(config.db)}`);
 
     return run(bucket, key, config.db).then(result => {
         console.log(`addBeverage result: ${result}`);

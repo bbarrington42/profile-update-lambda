@@ -7,7 +7,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   environment:
     configBucket: "ccfs-profile-config"
-    configKey: ${self:provider.stage}
+    configKey: ${self:provider.stage}/config.json
   iamRoleStatements:
     - Effect: "Allow"
       Action:

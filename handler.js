@@ -81,7 +81,6 @@ exports.addBeverage = async (event, context) => {
 
     console.log(`configBucket ${configBucket}, configKey ${configKey}`);
 
-    // todo Figure out why we do not have permissions to retrieve configuration from S3!
     const config = await getConfig(configBucket, configKey);
 
     console.log(`config.db: ${JSON.stringify(config.db)}`);

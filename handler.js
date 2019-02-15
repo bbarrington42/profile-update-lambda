@@ -7,7 +7,6 @@ const util = require('./lib/util');
 const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
-// The trigger for this handler is an upload of the CSV file to S3.
 
 // Example event structure:
 const event = {
@@ -49,9 +48,6 @@ const event = {
     ]
 };
 
-// Get the configuration for this deployment
-const getConfig = (bucket, key) => util.getObjectAsString(s3, bucket, key).then(JSON.parse);
-
 
 const run = (bucket, key, config) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
@@ -69,6 +65,7 @@ const run = (bucket, key, config) => {
     });
 };
 
+// The trigger for this handler is an upload of the CSV file to S3.
 exports.addBeverage = async (event, context) => {
     const data = event.Records.shift(); // Expecting only one record
     const bucket = data.s3.bucket.name;
@@ -81,10 +78,9 @@ exports.addBeverage = async (event, context) => {
 
     console.log(`configBucket ${configBucket}, configKey ${configKey}`);
 
-    const config = await getConfig(configBucket, configKey);
+    const config = await util.getObjectAsString(s3, configBucket, configKey).then(JSON.parse);
 
-    if (config === undefined || config.db === undefined)
-        return 'Configuration not found';
+    if (config === undefined || config.db === undefined) return 'Configuration not found';
 
     console.log(`config.db: ${JSON.stringify(config.db)}`);
 

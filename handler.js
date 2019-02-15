@@ -83,6 +83,9 @@ exports.addBeverage = async (event, context) => {
 
     const config = await getConfig(configBucket, configKey);
 
+    if (config === undefined || config.db === undefined)
+        return 'Configuration not found';
+
     console.log(`config.db: ${JSON.stringify(config.db)}`);
 
     return run(bucket, key, config.db).then(result => {

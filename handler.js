@@ -3,6 +3,7 @@
 const _ = require('underscore');
 const db = require('./lib/db');
 const validator = require('./lib/valid');
+const util = require('./lib/util');
 const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
@@ -48,38 +49,15 @@ const event = {
     ]
 };
 
-const dbConfig = {
-    host: process.env.db_host,
-    port: process.env.db_port,
-    database: process.env.db_database,
-    user: process.env.db_user,
-    password: process.env.db_password
-};
-
-const getObject = (s3, bucket, key) => {
-    return new Promise((resolve, reject) => {
-        s3.getObject({
-            Bucket: bucket,
-            Key: key
-        }, (err, data) => {
-            if (err) {
-                const msg = `getObject failed: ${err.toString()}`;
-                console.error(msg);
-                reject(msg);
-            } else {
-                console.log(`data: ${JSON.stringify(data)}`);
-                resolve(data);
-            }
-        })
-    })
-};
+// Get the configuration for this deployment
+const config = (bucket, key) => util.getObjectAsString(s3, bucket, key).then(JSON.parse);
 
 
 const run = (bucket, key, config) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
-    return getObject(s3, bucket, key).then(data => {
+    return util.getObjectAsString(s3, bucket, key).then(data => {
 
-        const raw = data.Body.toString().split('\n');
+        const raw = data.split('\n');
         // Filter out comment lines & empties and then trim each remaining line
         const input = _.filter(raw, line => !line.startsWith('#') && !_.isEmpty(line)).map(line => line.trim());
         console.log(`input: ${JSON.stringify(input)}`);
@@ -96,14 +74,34 @@ exports.addBeverage = async (event, context) => {
     const bucket = data.s3.bucket.name;
     const key = data.s3.object.key;
 
-    console.log(`bucket: ${bucket}`);
-    console.log(`key: ${key}`);
+    console.log(`Received event for bucket ${bucket}, key ${key}`);
 
-    return run(bucket, key, dbConfig).then(result => {
+    const configBucket = process.env.configBucket;
+    const configKey = process.env.configKey;
+
+    console.log(`configBucket ${configBucket}, configKey ${configKey}`);
+
+    // todo Figure out why we do not have permissions to retrieve configuration from S3!
+    const config = {
+        "db": {
+            "host": "cda-dev-db.cupaheoxeybe.us-east-1.rds.amazonaws.com",
+            "port": 3306,
+            "database": "cda",
+            "user": "cda_user",
+            "password": "password"
+        }
+    };
+        //await config(configBucket, configKey);
+    //////////////////////////////////////////////////
+
+    console.log(`dbConfig: ${JSON.stringify(config.db)}`);
+
+    return run(bucket, key, config.db).then(result => {
         console.log(`addBeverage result: ${result}`);
         return result;
     }).catch(err => {
         console.error(err);
         return err;
     });
+
 };

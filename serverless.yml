@@ -6,11 +6,8 @@ provider:
   profile: cda
   stage: ${opt:stage, 'dev'}
   environment:
-    db_user: ${file(config.${self:provider.stage}.json):db_user}
-    db_password: ${file(config.${self:provider.stage}.json):db_password}
-    db_database: ${file(config.${self:provider.stage}.json):db_database}
-    db_host: ${file(config.${self:provider.stage}.json):db_host}
-    db_port: ${file(config.${self:provider.stage}.json):db_port}
+    configBucket: "ccfs-profile-config"
+    configKey: ${self:provider.stage}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -19,7 +16,16 @@ provider:
         Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - ${file(config.${self:provider.stage}.json):s3_bucket}
+            - "ccfs-profile-changes"
+            - "/*"
+    - Effect: "Allow"
+      Action:
+        - "s3:GetObject"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "ccfs-profile-config"
             - "/*"
 
 functions:
@@ -33,7 +39,7 @@ functions:
         - subnet-76439300
     events:
       - s3:
-          bucket: ${file(config.${self:provider.stage}.json):s3_bucket}
+          bucket: "ccfs-profile-changes"
           event: s3:ObjectCreated:*
           rules:
             - suffix: .csv

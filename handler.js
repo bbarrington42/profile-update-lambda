@@ -58,10 +58,8 @@ const run = (bucket, key, config) => {
         const input = _.filter(raw, line => !line.startsWith('#') && !_.isEmpty(line)).map(line => line.trim());
         console.log(`input: ${JSON.stringify(input)}`);
 
-        // Validate
-        const errors = validator.validateCSV(input);
-
-        return _.isEmpty(errors) ? db.run(input, config) : Promise.reject(errors);
+        // Validate first
+        return validator.validateCSV(input).then(() => db.run(input, config));
     });
 };
 

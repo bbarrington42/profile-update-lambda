@@ -5,8 +5,11 @@ provider:
   runtime: nodejs8.10
   profile: cda
   stage: ${opt:stage, 'dev'}
+  custom:
+    bucketConfig: "ccfs-profile-config"
+    bucketChanges: "ccfs-profile-changes"
   environment:
-    configBucket: "ccfs-profile-config"
+    configBucket: ${self:provider.custom.bucketConfig}
     configKey: ${self:provider.stage}/config.json
   iamRoleStatements:
     - Effect: "Allow"
@@ -16,7 +19,7 @@ provider:
         Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "ccfs-profile-changes"
+            - ${self:provider.custom.bucketChanges}
             - "/*"
     - Effect: "Allow"
       Action:
@@ -25,7 +28,7 @@ provider:
         Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "ccfs-profile-config"
+            - ${self:provider.custom.bucketConfig}
             - "/*"
 
 functions:
@@ -39,8 +42,9 @@ functions:
         - subnet-76439300
     events:
       - s3:
-          bucket: "ccfs-profile-changes"
+          bucket: ${self:provider.custom.bucketChanges}
           event: s3:ObjectCreated:*
           rules:
+            - prefix: ${self:provider.stage}/
             - suffix: .csv
 

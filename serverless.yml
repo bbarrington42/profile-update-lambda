@@ -45,6 +45,6 @@ functions:
           bucket: ${self:provider.custom.bucketChanges}
           event: s3:ObjectCreated:*
           rules:
-            - prefix: ${self:provider.stage}/
+            - prefix: add/${self:provider.stage}/
             - suffix: .csv
 

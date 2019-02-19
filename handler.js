@@ -8,7 +8,7 @@ const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
 
-const validateAndGo = (bucket, key, config, op) => {
+const validateAndGo = (bucket, key, dbConfig, operation) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     return util.getObjectAsString(s3, bucket, key).then(data => {
 
@@ -18,12 +18,12 @@ const validateAndGo = (bucket, key, config, op) => {
         console.log(`input: ${JSON.stringify(input)}`);
 
         // Validate first
-        return validator.validateCSV(input, validator.configHeaders.add).then(() => db.run(input, config, op));
+        return validator.validateCSV(input, operation.validation).then(() => db.run(input, dbConfig, operation.func));
     });
 };
 
 // The trigger for this handler is an upload of the CSV file to S3.
-const run = async (event, context) => {
+const run = async (event, operation) => {
     const data = event.Records.shift(); // Expecting only one record
     const bucket = data.s3.bucket.name;
     const key = data.s3.object.key;
@@ -41,7 +41,7 @@ const run = async (event, context) => {
 
     console.log(`config.db: ${JSON.stringify(config.db)}`);
 
-    return validateAndGo(bucket, key, config.db, db.doAddBeverage).then(result => {
+    return validateAndGo(bucket, key, config.db, operation).then(result => {
         console.log(`addBeverage result: ${result}`);
         return result;
     }).catch(err => {
@@ -51,4 +51,18 @@ const run = async (event, context) => {
 
 };
 
-exports.addBeverage = async (event, context) => run(event, context);
+exports.addBeverage = async (event, context) => {
+
+    return run(event, {
+        validation: validator.configHeaders.add,
+        func: db.doAddBeverage
+    }).then(result => result).catch(err => err);
+};
+
+exports.updateBeverage = async (event, context) => {
+
+    return run(event, {
+        validation: validator.configHeaders.update,
+        func: db.doUpdateBeverage
+    }).then(result => result).catch(err => err);
+};

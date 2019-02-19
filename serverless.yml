@@ -48,3 +48,18 @@ functions:
             - prefix: add/${self:provider.stage}/
             - suffix: .csv
 
+  updateBeverage:
+    handler: handler.updateBeverage
+    vpc:
+      securityGroupIds:
+        - sg-1c3cfe65
+      subnetIds:
+        - subnet-d67b9ffc
+        - subnet-76439300
+    events:
+      - s3:
+          bucket: ${self:provider.custom.bucketChanges}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: update/${self:provider.stage}/
+            - suffix: .csv

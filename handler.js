@@ -8,7 +8,7 @@ const S3 = require('aws-sdk/clients/s3');
 const s3 = new S3();
 
 
-const validateAndGo = (bucket, key, dbConfig, operation) => {
+const validateAndGo = (bucket, key, dbConfig, opConfig) => {
     console.log(`Invoking s3.getObject: bucket = ${bucket}, key = ${key}`);
     return util.getObjectAsString(s3, bucket, key).then(data => {
 
@@ -18,7 +18,7 @@ const validateAndGo = (bucket, key, dbConfig, operation) => {
         console.log(`input: ${JSON.stringify(input)}`);
 
         // Validate first
-        return validator.validateCSV(input, operation.validation).then(() => db.run(input, dbConfig, operation.func));
+        return validator.validateCSV(input, opConfig.validation).then(() => db.run(input, dbConfig, opConfig.func));
     });
 };
 
@@ -35,19 +35,21 @@ const run = async (event, operation) => {
 
     console.log(`configBucket ${configBucket}, configKey ${configKey}`);
 
-    const config = await util.getObjectAsString(s3, configBucket, configKey).then(JSON.parse);
 
-    if (config === undefined || config.db === undefined) return 'Configuration not found';
+    return util.getObjectAsString(s3, configBucket, configKey).then(JSON.parse).then(lambdaConfig => {
+        if (lambdaConfig === undefined || lambdaConfig.db === undefined) return 'Lambda configuration not found';
 
-    console.log(`config.db: ${JSON.stringify(config.db)}`);
+        console.log(`lambdaConfig.db: ${JSON.stringify(lambdaConfig.db)}`);
 
-    return validateAndGo(bucket, key, config.db, operation).then(result => {
-        console.log(`addBeverage result: ${result}`);
-        return result;
-    }).catch(err => {
-        console.error(err);
-        return err;
-    });
+        return validateAndGo(bucket, key, lambdaConfig.db, operation).then(result => {
+            console.log(`addBeverage result: ${result}`);
+            return result;
+        }).catch(err => {
+            console.error(err);
+            return err;
+        });
+    })
+
 
 };
 
